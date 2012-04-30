@@ -15,8 +15,10 @@ module HTMLDiff
 
   class DiffBuilder
 
-    def initialize(old_version, new_version)
+    def initialize(old_version, new_version, ignore_whitespace = false)
       @old_version, @new_version = old_version, new_version
+      @ignore_whitespace = ignore_whitespace
+      @join_char = ignore_whitespace ? ' ' : ''
       @content = []
     end
 
@@ -24,7 +26,7 @@ module HTMLDiff
       split_inputs_to_words
       index_new_words
       operations.each { |op| perform_operation(op) }
-      return @content.join
+      return @content.join(@join_char)
     end
 
     def split_inputs_to_words
@@ -228,7 +230,7 @@ module HTMLDiff
       loop do
         break if words.empty?
         non_tags = extract_consecutive_words(words) { |word| not tag?(word) }
-        @content << wrap_text(non_tags.join, tagname, cssclass) unless non_tags.empty?
+        @content << wrap_text(non_tags.join(@join_char), tagname, cssclass) unless non_tags.empty?
 
         break if words.empty?
         @content += extract_consecutive_words(words) { |word| tag?(word) }
@@ -286,7 +288,7 @@ module HTMLDiff
             mode = :whitespace
           elsif /[\w\#@]+/i.match char
             current_word << char
-					else
+          else
             words << current_word unless current_word.empty?
             current_word = char
           end
@@ -307,13 +309,13 @@ module HTMLDiff
         end
       end
       words << current_word unless current_word.empty?
-      words
+      @ignore_whitespace ? words.reject { |word| /^\s+$/.match word } : words
     end
 
   end # of class Diff Builder
 
-  def diff(a, b)
-    DiffBuilder.new(a, b).build
+  def diff(a, b, ignore_whitespace = false)
+    DiffBuilder.new(a, b, ignore_whitespace).build
   end
 
 end
