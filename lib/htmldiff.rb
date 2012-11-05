@@ -1,3 +1,4 @@
+# encoding=utf-8 
 module HTMLDiff
 
   Match = Struct.new(:start_in_old, :start_in_new, :size)
@@ -286,7 +287,7 @@ module HTMLDiff
             words << current_word unless current_word.empty?
             current_word = char
             mode = :whitespace
-          elsif /[\S\#@]+/i.match char
+          elsif /[\w\#@]+/i.match char
             current_word << char
           else
             words << current_word unless current_word.empty?
