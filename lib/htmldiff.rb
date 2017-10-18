@@ -16,9 +16,10 @@ module HTMLDiff
 
   class DiffBuilder
 
-    def initialize(old_version, new_version, ignore_whitespace = false)
+    def initialize(old_version, new_version, ignore_whitespace = false, ignore_tags = false)
       @old_version, @new_version = old_version, new_version
       @ignore_whitespace = ignore_whitespace
+      @ignore_tags = ignore_tags
       @join_char = ignore_whitespace ? ' ' : ''
       @content = []
     end
@@ -210,6 +211,7 @@ module HTMLDiff
         @content << wrap_text(non_tags.join(@join_char), tagname, cssclass) unless non_tags.empty?
 
         break if words.empty?
+        break if @ignore_tags && tagname == "del"
         @content += extract_consecutive_words(words) { |word| tag?(word) }
       end
     end
@@ -291,8 +293,8 @@ module HTMLDiff
 
   end # of class Diff Builder
 
-  def diff(a, b, ignore_whitespace = false)
-    DiffBuilder.new(a, b, ignore_whitespace).build
+  def diff(a, b, ignore_whitespace = false, ignore_tags = false)
+    DiffBuilder.new(a, b, ignore_whitespace, ignore_tags).build
   end
 
 end

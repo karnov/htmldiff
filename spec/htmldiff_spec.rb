@@ -35,4 +35,31 @@ describe "htmldiff" do
     diff.should == "这<del class=\"diffdel\">个</del>是中<del class=\"diffmod\">文</del><ins class=\"diffmod\">国语</ins>内<del class=\"diffmod\">容, Ruby</del><ins class=\"diffmod\">容，Ruby</ins> is the <del class=\"diffmod\">bast</del><ins class=\"diffmod\">best language.</ins>"
   end
   
+  it "by default opening tags are duplicated breaking the dom" do
+    a = 'a <a href="#c1"></a> b'
+    b = 'a <a href="#c2"></a> c'
+    diff = TestDiff.diff(a, b)
+    expect(diff).to eq("a <a href=\"#c1\"><a href=\"#c2\"></a> <del class=\"diffmod\">b</del><ins class=\"diffmod\">c</ins>")
+  end
+
+  it "changes in properties will render both versions of the start tag, but not end tag" do
+    a = 'a <a href="#c1"></a> b'
+    b = 'a <a href="#c2"></a> c'
+    diff = TestDiff.diff(a, b, false, true)
+    expect(diff).to eq("a <a href=\"#c2\"></a> <del class=\"diffmod\">b</del><ins class=\"diffmod\">c</ins>")
+  end
+
+  it "works when jumping between tags and non tags" do
+    a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
+    b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
+    diff = TestDiff.diff(a, b, false, true)
+    expect(diff).to eq("a <a href=\"#c2\"></a><del class=\"diffmod\">b</del><ins class=\"diffmod\">c</ins><a href=\"#c3\"> <del class=\"diffmod\">c</del><ins class=\"diffmod\">d</ins><a href=\"#c4\">e")
+  end
+
+  it "example from the library" do
+    a = '<p>a</p>'
+    b = '<p>ab</p><p>c</b>'
+    diff = TestDiff.diff(a, b)
+    expect(diff).to eq("<p><del class=\"diffmod\">a</del><ins class=\"diffmod\">ab</ins></p><p><ins class=\"diffins\">c</ins></b>")
+  end
 end
