@@ -18,6 +18,9 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.3.1}
   s.summary = %q{HTML diffs of text (borrowed from a wiki software I no longer remember)}
 
+  s.add_development_dependency 'rspec', '~> 3.6'
+  s.add_development_dependency 'rake', '~> 12.1'
+
   if s.respond_to? :specification_version then
     current_version = Gem::Specification::CURRENT_SPECIFICATION_VERSION
     s.specification_version = 2
