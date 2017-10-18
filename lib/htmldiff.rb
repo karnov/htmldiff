@@ -136,33 +136,9 @@ module HTMLDiff
         match_length_at = new_match_length_at
       end
 
-#      best_match_in_old, best_match_in_new, best_match_size = add_matching_words_left(
-#          best_match_in_old, best_match_in_new, best_match_size, start_in_old, start_in_new)
-#      best_match_in_old, best_match_in_new, match_size = add_matching_words_right(
-#          best_match_in_old, best_match_in_new, best_match_size, end_in_old, end_in_new)
-
       return (best_match_size != 0 ? Match.new(best_match_in_old, best_match_in_new, best_match_size) : nil)
     end
 
-    def add_matching_words_left(match_in_old, match_in_new, match_size, start_in_old, start_in_new)
-      while match_in_old > start_in_old and
-            match_in_new > start_in_new and
-            @old_words[match_in_old - 1] == @new_words[match_in_new - 1]
-        match_in_old -= 1
-        match_in_new -= 1
-        match_size += 1
-      end
-      [match_in_old, match_in_new, match_size]
-    end
-
-    def add_matching_words_right(match_in_old, match_in_new, match_size, end_in_old, end_in_new)
-      while match_in_old + match_size < end_in_old and
-            match_in_new + match_size < end_in_new and
-            @old_words[match_in_old + match_size] == @new_words[match_in_new + match_size]
-        match_size += 1
-      end
-      [match_in_old, match_in_new, match_size]
-    end
 
     VALID_METHODS = [:replace, :insert, :delete, :equal]
 
