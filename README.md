@@ -5,7 +5,7 @@
 ## Installation
 
 ```ruby
-gem "htmldiff"
+gem 'htmldiff', github: 'karnov/htmldiff'
 ```
 
 ## Examples
