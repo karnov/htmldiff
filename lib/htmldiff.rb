@@ -16,9 +16,10 @@ module HTMLDiff
 
   class DiffBuilder
 
-    def initialize(old_version, new_version, ignore_whitespace = false)
+    def initialize(old_version, new_version, ignore_whitespace = false, ignore_tags = false)
       @old_version, @new_version = old_version, new_version
       @ignore_whitespace = ignore_whitespace
+      @ignore_tags = ignore_tags
       @join_char = ignore_whitespace ? ' ' : ''
       @content = []
     end
@@ -136,33 +137,9 @@ module HTMLDiff
         match_length_at = new_match_length_at
       end
 
-#      best_match_in_old, best_match_in_new, best_match_size = add_matching_words_left(
-#          best_match_in_old, best_match_in_new, best_match_size, start_in_old, start_in_new)
-#      best_match_in_old, best_match_in_new, match_size = add_matching_words_right(
-#          best_match_in_old, best_match_in_new, best_match_size, end_in_old, end_in_new)
-
       return (best_match_size != 0 ? Match.new(best_match_in_old, best_match_in_new, best_match_size) : nil)
     end
 
-    def add_matching_words_left(match_in_old, match_in_new, match_size, start_in_old, start_in_new)
-      while match_in_old > start_in_old and
-            match_in_new > start_in_new and
-            @old_words[match_in_old - 1] == @new_words[match_in_new - 1]
-        match_in_old -= 1
-        match_in_new -= 1
-        match_size += 1
-      end
-      [match_in_old, match_in_new, match_size]
-    end
-
-    def add_matching_words_right(match_in_old, match_in_new, match_size, end_in_old, end_in_new)
-      while match_in_old + match_size < end_in_old and
-            match_in_new + match_size < end_in_new and
-            @old_words[match_in_old + match_size] == @new_words[match_in_new + match_size]
-        match_size += 1
-      end
-      [match_in_old, match_in_new, match_size]
-    end
 
     VALID_METHODS = [:replace, :insert, :delete, :equal]
 
@@ -234,6 +211,7 @@ module HTMLDiff
         @content << wrap_text(non_tags.join(@join_char), tagname, cssclass) unless non_tags.empty?
 
         break if words.empty?
+        break if @ignore_tags && tagname == "del"
         @content += extract_consecutive_words(words) { |word| tag?(word) }
       end
     end
@@ -315,8 +293,8 @@ module HTMLDiff
 
   end # of class Diff Builder
 
-  def diff(a, b, ignore_whitespace = false)
-    DiffBuilder.new(a, b, ignore_whitespace).build
+  def diff(a, b, ignore_whitespace = false, ignore_tags = false)
+    DiffBuilder.new(a, b, ignore_whitespace, ignore_tags).build
   end
 
 end
