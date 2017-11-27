@@ -59,4 +59,12 @@ describe "htmldiff" do
     diff = TestDiff.diff(a, b)
     expect(diff).to eq("<p><del class=\"diffmod\">a</del><ins class=\"diffmod\">ab</ins></p><p><ins class=\"diffins\">c</ins></b>")
   end
+
+  it "should reduce consecutive matches" do
+    a = '<p>Han går til samtaler ved en psykiater. Like a boss.</p>'
+    b = '<p>Han drikker stærk spiritus. Like a boss.</p>'
+    expected = '<p>Han <del class="diffmod">går til samtaler ved en psykiater.</del><ins class="diffmod">drikker stærk spiritus.</ins> Like a boss.</p>'
+    diff = TestDiff.diff(a, b, reduce_consecutive: true)
+    expect(diff).to eq(expected)
+  end
 end
