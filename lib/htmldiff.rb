@@ -1,5 +1,6 @@
 # encoding: UTF-8
 module HTMLDiff
+  SIBLING_ELEMENTS = %w(p li div).freeze
 
   Match = Struct.new(:start_in_old, :start_in_new, :size)
   class Match
@@ -231,7 +232,10 @@ module HTMLDiff
         @content << wrap_text(non_tags.join(@join_char), tagname, cssclass) unless non_tags.empty?
 
         break if words.empty?
-        break if @ignore_tags && tagname == "del"
+        mm = words.first.match(/<\/?(\w+)>/)
+        next_tagname = mm ? mm[1] : nil
+        break if @ignore_tags && tagname == "del" && !SIBLING_ELEMENTS.include?(next_tagname)
+
         @content += extract_consecutive_words(words) { |word| tag?(word) }
       end
     end

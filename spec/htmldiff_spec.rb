@@ -48,38 +48,78 @@ describe "htmldiff" do
 
   describe "ignore_tags option" do
     describe "changes in properties should render balanced tags" do
-      it "will render both versions of the start tag, but not end tag when disabled" do
-        a = 'a <a href="#c1"></a> b'
-        b = 'a <a href="#c2"></a> c'
-        expected = 'a <a href="#c1"><a href="#c2"></a> <del class="diffmod">b</del><ins class="diffmod">c</ins>'
-        diff = TestDiff.diff(a, b, ignore_tags: false)
-        expect(diff).to eq(expected)
+      describe "when disabled" do
+        it "will render both versions of the start tag, but not end tag" do
+          a = 'a <a href="#c1"></a> b'
+          b = 'a <a href="#c2"></a> c'
+          expected = 'a <a href="#c1"><a href="#c2"></a> <del class="diffmod">b</del><ins class="diffmod">c</ins>'
+          diff = TestDiff.diff(a, b, ignore_tags: false)
+          expect(diff).to eq(expected)
+        end
+
+        it "will render both versions of the start tag, but not end tag" do
+          a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
+          b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
+          expected = 'a <a href="#c1"><a href="#c2"></a><del class="diffmod">b</del><a href="#c1"><ins class="diffmod">c</ins><a href="#c3"> <del class="diffmod">c</del><a href="#c1"><ins class="diffmod">d</ins><a href="#c4">e'
+          diff = TestDiff.diff(a, b, ignore_tags: false)
+          expect(diff).to eq(expected)
+        end
       end
 
-      it "will produce valid html when enabled" do
-        a = 'a <a href="#c1"></a> b'
-        b = 'a <a href="#c2"></a> c'
-        expected = 'a <a href="#c2"></a> <del class="diffmod">b</del><ins class="diffmod">c</ins>'
-        diff = TestDiff.diff(a, b, ignore_tags: true)
-        expect(diff).to eq(expected)
+      describe "when enabled" do
+        it "will produce valid html" do
+          a = 'a <a href="#c1"></a> b'
+          b = 'a <a href="#c2"></a> c'
+          expected = 'a <a href="#c2"></a> <del class="diffmod">b</del><ins class="diffmod">c</ins>'
+          diff = TestDiff.diff(a, b, ignore_tags: true)
+          expect(diff).to eq(expected)
+        end
+
+        it "will produce valid html" do
+          a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
+          b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
+          expected = 'a <a href="#c2"></a><del class="diffmod">b</del><ins class="diffmod">c</ins><a href="#c3"> <del class="diffmod">c</del><ins class="diffmod">d</ins><a href="#c4">e'
+          diff = TestDiff.diff(a, b, ignore_tags: true)
+          expect(diff).to eq(expected)
+        end
       end
     end
 
-    describe "when jumping between tags and non tags" do
-      it "will render both versions of the start tag, but not end tag when disabled" do
-        a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
-        b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
-        expected = 'a <a href="#c1"><a href="#c2"></a><del class="diffmod">b</del><a href="#c1"><ins class="diffmod">c</ins><a href="#c3"> <del class="diffmod">c</del><a href="#c1"><ins class="diffmod">d</ins><a href="#c4">e'
-        diff = TestDiff.diff(a, b, ignore_tags: false)
-        expect(diff).to eq(expected)
+    describe "removing tag with similar siblings" do
+      describe "when disabled" do
+        it "should show deleted paragraph" do
+          a = '<p>first</p><p>second</p>'
+          b = '<p>first</p>'
+          expected = '<p>first</p><p><del class="diffdel">second</del></p>'
+          diff = TestDiff.diff(a, b, ignore_tags: false)
+          expect(diff).to eq(expected)
+        end
+
+        it "should show deleted list-element" do
+          a = 'my list <ol><li>item a</li><li>item b</li></ol>'
+          b = 'my list <ol><li>item a</li></ol>'
+          expected = 'my list <ol><li>item a</li><li><del class="diffdel">item b</del></li></ol>'
+          diff = TestDiff.diff(a, b, ignore_tags: false)
+          expect(diff).to eq(expected)
+        end
       end
 
-      it "will produce valid html when enabled" do
-        a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
-        b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
-        expected = 'a <a href="#c2"></a><del class="diffmod">b</del><ins class="diffmod">c</ins><a href="#c3"> <del class="diffmod">c</del><ins class="diffmod">d</ins><a href="#c4">e'
-        diff = TestDiff.diff(a, b, ignore_tags: true)
-        expect(diff).to eq(expected)
+      describe "when enabled" do
+        it "should show deleted paragraph" do
+          a = '<p>first</p><p>second</p>'
+          b = '<p>first</p>'
+          expected = '<p>first</p><p><del class="diffdel">second</del></p>'
+          diff = TestDiff.diff(a, b, ignore_tags: true)
+          expect(diff).to eq(expected)
+        end
+
+        it "should show deleted list-element" do
+          a = 'my list <ol><li>item a</li><li>item b</li></ol>'
+          b = 'my list <ol><li>item a</li></ol>'
+          expected = 'my list <ol><li>item a</li><li><del class="diffdel">item b</del></li></ol>'
+          diff = TestDiff.diff(a, b, ignore_tags: true)
+          expect(diff).to eq(expected)
+        end
       end
     end
   end
