@@ -1,6 +1,5 @@
 # encoding: UTF-8
 module HTMLDiff
-  SIBLING_ELEMENTS = %w(p li div).freeze
 
   Match = Struct.new(:start_in_old, :start_in_new, :size)
   class Match
@@ -26,11 +25,13 @@ module HTMLDiff
     #
     def initialize(old_version, new_version, *mixed)
       @old_version, @new_version = old_version, new_version
+      @sibling_elements = %w(p li div)
       if mixed.first.is_a?(Hash)
         options = mixed.first
         @ignore_whitespace = !! options[:ignore_whitespace]
         @ignore_tags = !! options[:ignore_tags]
         @reduce_consecutive = !! options[:reduce_consecutive]
+        @sibling_elements = options[:sibling_elements] if options[:sibling_elements]
       else
         @ignore_whitespace = !! mixed[0]
         @ignore_tags = !! mixed[1]
@@ -234,7 +235,7 @@ module HTMLDiff
         break if words.empty?
         mm = words.first.match(/<\/?(\w+)>/)
         next_tagname = mm ? mm[1] : nil
-        break if @ignore_tags && tagname == "del" && !SIBLING_ELEMENTS.include?(next_tagname)
+        break if @ignore_tags && tagname == "del" && !@sibling_elements.include?(next_tagname)
 
         @content += extract_consecutive_words(words) { |word| tag?(word) }
       end
