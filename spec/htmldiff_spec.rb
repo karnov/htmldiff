@@ -46,6 +46,13 @@ describe "htmldiff" do
     expect(diff).to eq("a <a href=\"#c2\"></a> <del class=\"diffmod\">b</del><ins class=\"diffmod\">c</ins>")
   end
 
+  it "there should be a bug..." do
+    a = 'my list <ol><li>item a</li><li>item b</li></ol>'
+    b = 'my list <ol><li>item a</li></ol>'
+    diff = TestDiff.diff(a, b, false, true)
+    expect(diff).to eq("my list <ol><li>item a</li><del><li>item b</li></del></ol>")
+  end
+
   it "works when jumping between tags and non tags" do
     a = 'a <a href="#c1"></a>b<a href="#c1"> c<a href="#c1">e'
     b = 'a <a href="#c2"></a>c<a href="#c3"> d<a href="#c4">e'
