@@ -15,12 +15,29 @@ module HTMLDiff
   Operation = Struct.new(:action, :start_in_old, :end_in_old, :start_in_new, :end_in_new)
 
   class DiffBuilder
-
-    def initialize(old_version, new_version, ignore_whitespace = false, ignore_tags = false)
+    # For BC reasons, you can call this constructor with positioned options, but named are strongly preferred.
+    #
+    # Legacy signature:
+    #   def initialize(old_version, new_version, ignore_whitespace = false, ignore_tags = false)
+    #
+    # New signature:
+    #   def initialize(old_version, new_version, ignore_whitespace: false, ignore_tags: false, reduce_consecutive: false)
+    #
+    def initialize(old_version, new_version, *mixed)
       @old_version, @new_version = old_version, new_version
-      @ignore_whitespace = ignore_whitespace
-      @ignore_tags = ignore_tags
-      @join_char = ignore_whitespace ? ' ' : ''
+      @sibling_elements = %w(p li div)
+      if mixed.first.is_a?(Hash)
+        options = mixed.first
+        @ignore_whitespace = !! options[:ignore_whitespace]
+        @ignore_tags = !! options[:ignore_tags]
+        @reduce_consecutive = !! options[:reduce_consecutive]
+        @sibling_elements = options[:sibling_elements] if options[:sibling_elements]
+      else
+        @ignore_whitespace = !! mixed[0]
+        @ignore_tags = !! mixed[1]
+        @reduce_consecutive = false
+      end
+      @join_char = @ignore_whitespace ? ' ' : ''
       @content = []
     end
 
@@ -28,7 +45,12 @@ module HTMLDiff
       split_inputs_to_words
       index_new_words
       operations.each { |op| perform_operation(op) }
-      return @content.join(@join_char)
+      diff_output = @content.join(@join_char)
+      if @reduce_consecutive
+        ConsecutiveDiffReducer.new.call(diff_output)
+      else
+        diff_output
+      end
     end
 
     def split_inputs_to_words
@@ -211,7 +233,10 @@ module HTMLDiff
         @content << wrap_text(non_tags.join(@join_char), tagname, cssclass) unless non_tags.empty?
 
         break if words.empty?
-        break if @ignore_tags && tagname == "del"
+        mm = words.first.match(/<\/?(\w+)>/)
+        next_tagname = mm ? mm[1] : nil
+        break if @ignore_tags && tagname == "del" && !@sibling_elements.include?(next_tagname)
+
         @content += extract_consecutive_words(words) { |word| tag?(word) }
       end
     end
@@ -293,8 +318,63 @@ module HTMLDiff
 
   end # of class Diff Builder
 
-  def diff(a, b, ignore_whitespace = false, ignore_tags = false)
-    DiffBuilder.new(a, b, ignore_whitespace, ignore_tags).build
+  class ConsecutiveDiffReducer
+    def initialize(skip: /^\s+$/)
+      @skip_regexp = skip
+    end
+
+    def call(input)
+      token_regexp = /(<del[^>]*>.*?<\/del><ins[^>]*>.*?<\/ins>)/i
+      mode = :none
+      @output = []
+      @buffer = []
+      input.split(token_regexp).each do |token|
+        if token =~ token_regexp
+          flush_buffer! unless mode == :diffmod
+          mode = :diffmod
+          @buffer << token
+        elsif token =~ @skip_regexp && mode == :diffmod
+          @buffer << token
+        else
+          flush_buffer!
+          mode = :none
+          @output << token
+        end
+      end
+      flush_buffer!
+      @output.join
+    end
+
+    def flush_buffer!
+      @output = @output + reduce_buffer
+      @buffer = []
+    end
+
+    def reduce_buffer
+      return [] if @buffer.empty?
+      delete_tag = nil
+      insert_tag = nil
+      deletes = []
+      inserts = []
+      @buffer.each do |token|
+        if token =~ @skip_regexp
+          deletes << token
+          inserts << token
+        else
+          m = token.match(/(<del[^>]*>)(.*?)<\/del>(<ins[^>]*>)(.*?)<\/ins>/i)
+          fail "Token didn't match expression" unless m
+          delete_tag ||= m[1]
+          deletes << m[2]
+          insert_tag ||= m[3]
+          inserts << m[4]
+        end
+      end
+      [delete_tag, *deletes, "</del>", insert_tag, *inserts, "</ins>"]
+    end
+  end # of class ConsecutiveDiffReducer
+
+  def diff(a, b, *options)
+    DiffBuilder.new(a, b, *options).build
   end
 
 end
